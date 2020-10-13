@@ -1,0 +1,57 @@
+---
+- name: "check mandatory variables"
+  assert:
+    that:
+      - systemd_service.docker.image is defined
+  tags: ['check_vars']
+
+- name: deploy systemd-docker executable
+  copy:
+    src: systemd-docker
+    dest: /usr/bin/systemd-docker
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+  when: (systemd_service.docker.use_wrapper | default(systemd_service_defaults.docker.use_wrapper))
+
+- name: "ensure system unit for {{ systemd_service.name }} pull exists"
+  template:
+    src: systemd-docker-pull.service.j2
+    dest: "/etc/systemd/system/{{ systemd_service.name }}-pull@.service"
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+  when: systemd_service.docker.use_pull_unit | default(false)
+  notify: restart systemd service
+
+- name: "ensure system unit for {{ systemd_service.name }} exists"
+  template:
+    src: systemd-docker.service.j2
+    dest: "/etc/systemd/system/{{ systemd_service.name }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+  notify: restart systemd service
+
+- name: "ensure system unit override directory for {{ systemd_service.name }} exists"
+  file:
+    path: "/etc/systemd/system/{{ systemd_service.name }}.service.d/"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when: systemd_service.docker.env is defined
+
+- name: "ensure system unit environment override for {{ systemd_service.name }} exists"
+  template:
+    src: systemd-docker-env.j2
+    dest: "/etc/systemd/system/{{ systemd_service.name }}.service.d/env.conf"
+    owner: root
+    group: root
+    mode: 0640
+  become: true
+  when: systemd_service.docker.env is defined
+  notify: restart systemd service

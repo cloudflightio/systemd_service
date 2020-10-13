@@ -1,0 +1,8 @@
+---
+- name: restart systemd service
+  systemd:
+    name: "{{ systemd_service.name }}"
+    state: restarted
+    daemon_reload: true
+  become: true
+  when: systemd_service.restart_on_change | default(systemd_service_defaults.restart_on_change)

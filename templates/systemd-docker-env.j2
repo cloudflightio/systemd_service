@@ -1,0 +1,4 @@
+[Service]
+{% for item in systemd_service.docker.env | default({}) | dictsort %}
+Environment="{{ item[0] }}={{ item[1] }}"
+{% endfor %}

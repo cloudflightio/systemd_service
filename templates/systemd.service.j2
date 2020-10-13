@@ -1,0 +1,32 @@
+[Unit]
+Description={{ systemd_service.name }}
+{% for after in systemd_service.after | default([]) %}
+After={{ after }}
+{% endfor %}
+{% for requires in systemd_service.requires | default([]) %}
+Requires={{ requires }}
+{% endfor %}
+
+[Service]
+TimeoutStartSec=10m
+Restart=on-failure
+StartLimitInterval=720s
+StartLimitBurst=4
+{% if systemd_service.user is defined %}
+User={{ systemd_service.user }}
+{% endif %}
+{% if systemd_service.exec_start_pre is defined %}
+ExecStartPre={{ systemd_service.exec_start_pre }}
+{% endif %}
+{% if systemd_service.exec_start is defined %}
+ExecStart={{ systemd_service.exec_start }}
+{% endif %}
+{% if systemd_service.exec_stop is defined %}
+ExecStop={{ systemd_service.exec_stop }}
+{% endif %}
+{% if systemd_service.exec_reload is defined %}
+ExecReload={{ systemd_service.exec_reload }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

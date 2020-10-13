@@ -1,0 +1,135 @@
+[Unit]
+Description={{ systemd_service.name }}
+After=docker.service
+{% for after in systemd_service.after | default([]) %}
+After={{ after }}
+{% endfor %}
+{% for requires in systemd_service.requires | default([]) %}
+Requires={{ requires }}
+{% endfor %}
+
+[Service]
+TimeoutStartSec=10m
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=720s
+StartLimitBurst=4
+SyslogIdentifier={{ systemd_service.name }}
+SyslogFacility=local5
+Environment=CONTAINER={{ systemd_service.docker.container_name | default(systemd_service.name) }}
+{% if systemd_service.docker.image is mapping %}
+Environment=IMAGE={{ systemd_service.docker.image.name }}
+Environment=IMAGE_TAG={{ systemd_service.docker.image.tag | default(systemd_service.docker.default_tag) }}
+{% else %}
+{% set image_parts = systemd_service.docker.image.split(':') %}
+Environment=IMAGE={{ image_parts[0] }}
+Environment=IMAGE_TAG={{ image_parts[1] | default(systemd_service.docker.default_tag) }}
+{% endif %}
+{% for item in systemd_service.docker.env | default({}) | dictsort %}
+PassEnvironment={{ item[0] }}
+{% endfor %}
+{% if (systemd_service.docker.pull | default(systemd_service_defaults.docker.pull) ) %}
+ExecStartPre=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} pull ${IMAGE}:${IMAGE_TAG}
+{% endif %}
+{% if not (systemd_service.docker.use_wrapper | default(systemd_service_defaults.docker.use_wrapper) ) %}
+ExecStartPre=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} stop -t 2 ${CONTAINER}
+ExecStartPre=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} kill ${CONTAINER}
+ExecStartPre=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} rm ${CONTAINER}
+{% endif %}
+{% if systemd_service.custom_pre_start is defined %}
+ExecStartPre=-{{ systemd_service.custom_pre_start }}
+{% endif %}
+{% if systemd_service.docker.use_wrapper | default(systemd_service_defaults.docker.use_wrapper)  %}
+ExecStart=/usr/bin/systemd-docker run --rm \
+{% else %}
+ExecStart={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} run --rm \
+{% endif %}
+{% for port in systemd_service.docker.expose_port | default([]) %}
+    -p {% if port.ip is defined %}{{ port.ip }}:{% endif %}{{ port.host }}:{{ port.container }} \
+{% endfor %}
+{% for port in systemd_service.docker.ports | default([]) %}
+    -p {{ port }} \
+{% endfor %}
+{% for volume in systemd_service.docker.volume | default([]) %}
+    -v "{{ volume.host }}:{{ volume.container }}{% if volume.mode is defined %}:{{ volume.mode }}{% endif %}" \
+{% endfor %}
+{% for volume in systemd_service.docker.volumes | default([]) %}
+    -v {{ volume }} \
+{% endfor %}
+{% for link in systemd_service.docker.link | default([]) %}
+{% if link is mapping %}
+    --link={{ link.container_name }}:{{ link.alias | default(link.container_name) }} \
+{% else %}
+    --link={{ link }} \
+{% endif %}
+{% endfor %}
+{% for item in systemd_service.docker.env | default({}) | dictsort %}
+    -e "{{ item[0] }}" \
+{% endfor %}
+{% if systemd_service.docker.memory_limit is defined %}
+    -m {{ systemd_service.docker.memory_limit }} \
+{% endif %}
+{% if systemd_service.docker.cpu_limit is defined %}
+    --cpus={{ systemd_service.docker.cpu_limit }} \
+{% endif %}
+{% for volume in systemd_service.docker.volumes_from | default([]) %}
+    --volumes-from={{ volume }} \
+{% endfor %}
+{% for label in systemd_service.docker.labels | default([]) %}
+    --label="{{label}}" \
+{% endfor %}
+{% if systemd_service.docker.network is defined %}
+    --network={{ systemd_service.docker.network }} \
+{% endif %}
+{% for network in systemd_service.docker.networks | default([]) %}
+{% if network is mapping %}
+    --network={{ network.name }} \
+{% else %}
+    --network={{ network }} \
+{% endif %}
+{% endfor %}
+{% if systemd_service.docker.ipv4 is defined %}
+    --ip="{{ systemd_service.docker.ipv4 }}" \
+{% endif %}
+{% if systemd_service.docker.ipv6 is defined %}
+    --ip6="{{ systemd_service.docker.ipv6 }}" \
+{% endif %}
+{% for host in systemd_service.docker.hosts | default([]) %}
+    --add-host="{{ host.hostname }}:{{ host.ip }}" \
+{% endfor %}
+{% if systemd_service.docker.entrypoint is defined %}
+    --entrypoint="{{ systemd_service.docker.entrypoint }}" \
+{% endif %}
+{% if systemd_service.docker.workdir is defined %}
+    -w="{{ systemd_service.docker.workdir }}" \
+{% endif %}
+{% if systemd_service.docker.user is defined %}
+    --user="{{ systemd_service.docker.user }}" \
+{% endif %}
+{% if systemd_service.docker.stopsignal is defined %}
+    --stop-signal={{ systemd_service.docker.stopsignal }} \
+{% endif %}
+{% if systemd_service.docker.hostname is defined %}
+    --hostname={{ systemd_service.docker.hostname }} \
+{% endif %}
+{% if systemd_service.docker.raw_args is defined %}
+    {{ systemd_service.docker.raw_args }} \
+{% endif %}
+{% for env_file in systemd_service.docker.env_file | default([]) %}
+    --env-file={{ env_file }} \
+{% endfor %}
+    --name ${CONTAINER} ${IMAGE}:${IMAGE_TAG} {% if systemd_service.docker.arguments is defined %}{{ systemd_service.docker.arguments }}{% endif %}
+
+{% if systemd_service.execstop is defined %}
+ExecStop=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} exec ${CONTAINER} {{ systemd_service.docker.execstop }}
+{% endif %}
+ExecStop={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} stop -t 2 ${CONTAINER}
+{% if systemd_service.exec_reload is defined %}
+ExecReload={{ systemd_service.exec_reload }}
+{% endif %}
+{% if systemd_service.docker.exec_reload is defined %}
+ExecReload={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} exec ${CONTAINER} {{ systemd_service.docker.exec_reload }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+---
+- name: Converge
+  hosts: all
+  roles:
+    - role: systemd_service
+      vars:
+        systemd_service:
+          name: test
+          enabled: true
+          docker:
+            container_name: test-container
+            image: alpine
+            pull: false
+            volume:
+              - host: /srv/data/container/test/
+                container: /test
+                mode: rw
+            expose_port:
+              - host: 9999
+                container: 9999
+            env:
+              SECRET: superSecureInformation!1!11
+            arguments: >
+              sh -c 'touch /test/test && tail -f /test/test'
+    - role: systemd_service
+      vars:
+        systemd_service:
+          name: test_newimagesyntax
+          enabled: true
+          docker:
+            image:
+              name: alpine
+              tag: 3.2
+            volume:
+              - host: /srv/data/container/test/
+                container: /test
+                mode: rw
+            arguments: >
+              sh -c 'touch /test/test_newimagesyntax && tail -f /test/test_newimagesyntax'
+    - role: systemd_service
+      vars:
+        systemd_service:
+          name: test_pullunit
+          enabled: true
+          docker:
+            use_pull_unit: true
+            image:
+              name: alpine
+              tag: 3.2
+            volume:
+              - host: /srv/data/container/test/
+                container: /test
+                mode: rw
+            arguments: >
+              sh -c 'touch /test/test_pullunit && tail -f /test/test_pullunit'

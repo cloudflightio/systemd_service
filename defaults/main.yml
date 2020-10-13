@@ -1,0 +1,2 @@
+---
+systemd_service: "{{ systemd_service_defaults }}"

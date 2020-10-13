@@ -1,0 +1,25 @@
+---
+- name: "check mandatory variables"
+  assert:
+    that:
+      - systemd_service.name is defined
+  tags: ['check_vars']
+
+- name: creating systemd service
+  include_tasks: common-service.yml
+  when: systemd_service.docker is not defined or systemd_service.docker.image is not defined
+
+- name: creating systemd docker service
+  include_tasks: docker-service.yml
+  when: systemd_service.docker is defined and systemd_service.docker.image is defined
+
+- name: "Enabling and starting {{ systemd_service.name }}"
+  systemd:
+    name: "{{ systemd_service.name }}"
+    daemon_reload: true
+    state: "{{ systemd_service.state | default(systemd_service_defaults.state) }}"
+    enabled: "{{ systemd_service.enabled | default(omit) }}"
+  become: true
+
+- name: force all notified handlers to run at this point, not waiting for normal sync points
+  meta: flush_handlers

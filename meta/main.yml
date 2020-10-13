@@ -1,0 +1,13 @@
+---
+dependencies: []
+galaxy_info:
+  author: Michael Riedmann, Mathias Schuepany, Dominik Süß
+  description: Role to manage systemd-services, especially for deploying docker-containers in a systemd-compliant way.
+  company: Cloudflight GmbH
+  min_ansible_version: 2.5
+  license: apache2
+  platforms:
+    - name: Fedora
+      versions: ['all']
+    - name: CentOS
+      versions: ['all']

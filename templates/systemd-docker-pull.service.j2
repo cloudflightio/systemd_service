@@ -1,0 +1,27 @@
+[Unit]
+Description={{ systemd_service.name }} %I
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=10m
+StartLimitInterval=720s
+StartLimitBurst=4
+SyslogIdentifier={{ systemd_service.name }}
+SyslogFacility=local5
+{% if systemd_service.docker.image is mapping %}
+Environment=IMAGE={{ systemd_service.docker.image.name }}
+Environment=IMAGE_TAG={{ systemd_service.docker.image.tag | default('latest_pull') }}
+{% else %}
+{% set image_parts = systemd_service.docker.image.split(':') %}
+Environment=IMAGE={{ image_parts[0] }}
+Environment=IMAGE_TAG={{ image_parts[1] | default('latest_pull') }}
+{% endif %}
+
+ExecStart={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} pull ${IMAGE}:%i
+ExecStart={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} tag ${IMAGE}:%i ${IMAGE}:${IMAGE_TAG}
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
