@@ -8,6 +8,11 @@ galaxy_info:
   license: apache2
   platforms:
     - name: Fedora
-      versions: ['all']
-    - name: CentOS
-      versions: ['all']
+      versions:
+        - 30
+        - 31
+        - 32
+    - name: EL
+      versions:
+        - 7
+        - 8
