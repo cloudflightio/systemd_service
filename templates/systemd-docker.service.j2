@@ -123,7 +123,7 @@ ExecStart={{ systemd_service.docker.docker_binary | default(systemd_service_defa
 {% if systemd_service.execstop is defined %}
 ExecStop=-{{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} exec ${CONTAINER} {{ systemd_service.docker.execstop }}
 {% endif %}
-ExecStop={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} stop -t 2 ${CONTAINER}
+ExecStop={{ systemd_service.docker.docker_binary | default(systemd_service_defaults.docker.docker_binary) }} stop -t {{ systemd_service.docker.stop_timeout | default(systemd_service_defaults.docker.stop_timeout) }} ${CONTAINER}
 {% if systemd_service.exec_reload is defined %}
 ExecReload={{ systemd_service.exec_reload }}
 {% endif %}

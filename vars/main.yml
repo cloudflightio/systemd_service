@@ -7,4 +7,5 @@ systemd_service_defaults:
     pull: true
     use_wrapper: false
     default_tag: latest
+    stop_timeout: 2
   restart_on_change: true
