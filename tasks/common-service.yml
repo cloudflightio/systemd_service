@@ -26,5 +26,6 @@
     group: root
     mode: 0640
   become: true
+  no_log: true
   when: systemd_service.env is defined
   notify: restart systemd service
