@@ -5,6 +5,11 @@
       - systemd_service.name is defined
   tags: ['check_vars']
 
+- name: "set service name fact"
+  set_fact:
+    systemd_service_unit_name: "{{ systemd_service.name }}"
+    cacheable: false
+
 - name: creating systemd service
   include_tasks: common-service.yml
   when: systemd_service.docker is not defined or systemd_service.docker.image is not defined
